@@ -127,9 +127,10 @@ class CuMemBackend(SleepModeBackend):
         from vllm.device_allocator import get_mem_allocator_instance
 
         self._state = "SUSPENDED"
-        get_mem_allocator_instance().sleep(
-            ("weights", "runtime", "cudagraph"), discardable
-        )
+        # Weights (minus the discardable parameters) and runtime state are backed
+        # up. CUDA graph pools are released without a backup: every replay
+        # rewrites them before reading (vllm-project/vllm#59909).
+        get_mem_allocator_instance().sleep(("weights", "runtime"), discardable)
 
     def resume(self, tags: list[str] | None = None) -> None:
         from vllm.device_allocator import get_mem_allocator_instance
