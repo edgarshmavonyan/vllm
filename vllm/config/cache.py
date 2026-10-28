@@ -329,6 +329,13 @@ class CacheConfig:
     Mamba2 speculative decoding requires FlashInfer. Pipeline parallelism is not
     supported. Flushes are most efficient when mamba_block_size is a
     multiple of replayssm_buffer_len, but this is not required."""
+    use_replayssm_spec: bool = False
+    """Use the ReplaySSM Mamba2 speculative-decode kernel: verify a whole draft
+    window against one checkpoint plus a circular input ring, so rollback is a
+    cursor move instead of a per-draft state snapshot. Requires speculative
+    decoding, mamba_cache_mode 'none' or 'align', and the Triton mamba backend;
+    mutually exclusive with use_replayssm. replayssm_buffer_len must be at least
+    1 + num_speculative_tokens."""
     use_kda_recoverssm: bool = field(default=False, init=False)
     """Whether Kimi-K3 KDA uses RecoverSSM speculative decode."""
 

@@ -21,6 +21,7 @@ from vllm.v1.attention.backends.utils import (
     mamba_get_block_table_tensor,
     split_decodes_and_prefills,
 )
+from vllm.v1.attention.backends.registry import MambaAttentionBackendEnum
 from vllm.v1.kv_cache_interface import MambaSpec
 
 M = TypeVar("M", bound="BaseMambaAttentionMetadata")
@@ -110,6 +111,17 @@ class BaseMambaAttentionMetadataBuilder(AttentionMetadataBuilder[M], abc.ABC):
         self.use_replayssm = vllm_config.cache_config.use_replayssm
         self.replayssm_buffer_len = vllm_config.cache_config.replayssm_buffer_len
         self.use_flashinfer_replayssm = vllm_config.use_flashinfer_replayssm
+        # (yndx) In this build `use_replayssm_spec` is implemented for GDN layers only
+        # (GDNAttentionMetadataBuilder); the Mamba2 variant was dropped in favour of
+        # upstream's (vllm-project/vllm#66318). Fail loudly instead of ignoring the flag.
+        if (
+            vllm_config.cache_config.use_replayssm_spec
+            and kv_cache_spec.mamba_type == MambaAttentionBackendEnum.MAMBA2
+        ):
+            raise ValueError(
+                "--use-replayssm-spec is supported for GDN layers only in this build "
+                "(Mamba2 speculative ReplaySSM: see vllm-project/vllm#66318)"
+            )
 
         scheduler_config = vllm_config.scheduler_config
         self.decode_cudagraph_max_bs: int = scheduler_config.max_num_seqs
